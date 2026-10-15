@@ -100,12 +100,20 @@ The first version does not reproduce every unknown ActiveX behaviour, provide
 database binding, expose accessible individual cells to screen readers, or
 implement merged cells, printing, sorting, clipboard operations, and undo.
 It uses a standard managed WinForms renderer, not DynamicGrid or native COM.
+The same sources target `net481` and `net10.0-windows`; use the corresponding DLL
+for each consuming application. The modern target includes explicit designer
+serialization metadata for custom colours and excludes runtime scroll positions
+from serialization. These declarations also apply to the Framework build.
 High-DPI metrics are implemented, but mixed-monitor visual behaviour and VS
 behaviour still need interactive validation in your environment. The default
 size properties have been tested through a WinForms design host/PropertyGrid;
 Rosters integration also confirmed that clearing stale local `.vs` state can
 restore properties missing from the Visual Studio designer. See the README for
 setup and troubleshooting steps.
+Both runtime suites exercise a PropertyGrid. The Framework suite additionally
+uses `System.Design.DesignSurface`; that Framework-only assembly is not used in
+the .NET 10 suite. The .NET 10 Visual Studio designer still requires a manual
+smoke test; a passing runtime PropertyGrid check is not that designer test.
 
 ## Diagnosing invalid indices
 

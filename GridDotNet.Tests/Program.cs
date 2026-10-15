@@ -302,39 +302,19 @@ namespace GridDotNet.Tests
                     Equal(26, ((System.ComponentModel.DefaultValueAttribute)properties["DefaultRowHeight"].Attributes[typeof(System.ComponentModel.DefaultValueAttribute)]).Value, "designer row default metadata");
                     Equal(60, ((System.ComponentModel.DefaultValueAttribute)properties["DefaultColWidth"].Attributes[typeof(System.ComponentModel.DefaultValueAttribute)]).Value, "designer column default metadata");
                 }
+#if NETFRAMEWORK
                 using (var surface = new System.ComponentModel.Design.DesignSurface(typeof(Form)))
-                using (var propertyGrid = new PropertyGrid())
                 {
                     var host = (System.ComponentModel.Design.IDesignerHost)surface.GetService(typeof(System.ComponentModel.Design.IDesignerHost));
                     var control = (GridControl)host.CreateComponent(typeof(GridControl), "designerGrid");
                     ((Form)host.RootComponent).Controls.Add(control);
-                    var visibleProperties = System.ComponentModel.TypeDescriptor.GetProperties(control,
-                        new Attribute[] { System.ComponentModel.BrowsableAttribute.Yes });
-                    Equal(true, visibleProperties["DefaultRowHeight"] != null, "design host exposes browsable row default");
-                    Equal(true, visibleProperties["DefaultColWidth"] != null, "design host exposes browsable column default");
-                    propertyGrid.SelectedObject = control;
-                    propertyGrid.PropertySort = PropertySort.Categorized;
-                    propertyGrid.CreateControl(); propertyGrid.Refresh();
-                    GridItem root = PropertyRoot(propertyGrid);
-                    Equal(true, HasGridItem(root, "Layout", GridItemType.Category), "categorized property grid contains Layout");
-                    Equal(true, HasGridItem(root, "DefaultRowHeight", GridItemType.Property), "categorized property grid contains row default");
-                    Equal(true, HasGridItem(root, "DefaultColWidth", GridItemType.Property), "categorized property grid contains column default");
-                    propertyGrid.PropertySort = PropertySort.Alphabetical;
-                    root = PropertyRoot(propertyGrid);
-                    Equal(false, HasGridItem(root, "Layout", GridItemType.Category), "alphabetical property grid has no Layout category");
-                    Equal(true, HasGridItem(root, "DefaultRowHeight", GridItemType.Property), "alphabetical property grid contains row default");
-                    Equal(true, HasGridItem(root, "DefaultColWidth", GridItemType.Property), "alphabetical property grid contains column default");
-                    visibleProperties["DefaultRowHeight"].SetValue(control, 37);
-                    visibleProperties["DefaultColWidth"].SetValue(control, 83);
-                    Equal(37, control.get_RowHeight(0), "design-time row property setter works");
-                    Equal(83, control.get_ColWidth(0), "design-time column property setter works");
-                    Equal(true, visibleProperties["DefaultRowHeight"].ShouldSerializeValue(control), "designer serializes changed row default");
-                    Equal(true, visibleProperties["DefaultColWidth"].ShouldSerializeValue(control), "designer serializes changed column default");
-                    visibleProperties["DefaultRowHeight"].ResetValue(control);
-                    visibleProperties["DefaultColWidth"].ResetValue(control);
-                    Equal(26, control.DefaultRowHeight, "design-time row reset works");
-                    Equal(60, control.DefaultColWidth, "design-time column reset works");
+                    CheckDesignerProperties(control);
                 }
+#else
+                // Modern Visual Studio hosts its designer out of process. Test the runtime
+                // PropertyGrid here without depending on the Framework-only System.Design.
+                using (var control = new GridControl()) CheckDesignerProperties(control);
+#endif
                 if (args.Length == 2 && args[0] == "--snapshot")
                 {
                     using (var form = new Demo.DemoForm())
@@ -349,9 +329,48 @@ namespace GridDotNet.Tests
                         form.Close();
                     }
                 }
-                Console.WriteLine($"PASS: {checks} checks."); return 0;
+                Console.WriteLine($"PASS: {checks} checks ({System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription})."); return 0;
             }
             catch (Exception e) { Console.Error.WriteLine(e); return 1; }
+        }
+        private static void CheckDesignerProperties(GridControl control)
+        {
+            using (var propertyGrid = new PropertyGrid())
+            {
+                var visibleProperties = System.ComponentModel.TypeDescriptor.GetProperties(control,
+                    new Attribute[] { System.ComponentModel.BrowsableAttribute.Yes });
+                Equal(true, visibleProperties["DefaultRowHeight"] != null, "descriptor filter exposes browsable row default");
+                Equal(true, visibleProperties["DefaultColWidth"] != null, "descriptor filter exposes browsable column default");
+                propertyGrid.SelectedObject = control;
+                propertyGrid.PropertySort = PropertySort.Categorized;
+                propertyGrid.CreateControl(); propertyGrid.Refresh();
+                GridItem root = PropertyRoot(propertyGrid);
+                Equal(true, HasGridItem(root, "Layout", GridItemType.Category), "categorized property grid contains Layout");
+                Equal(true, HasGridItem(root, "DefaultRowHeight", GridItemType.Property), "categorized property grid contains row default");
+                Equal(true, HasGridItem(root, "DefaultColWidth", GridItemType.Property), "categorized property grid contains column default");
+                propertyGrid.PropertySort = PropertySort.Alphabetical;
+                root = PropertyRoot(propertyGrid);
+                Equal(false, HasGridItem(root, "Layout", GridItemType.Category), "alphabetical property grid has no Layout category");
+                Equal(true, HasGridItem(root, "DefaultRowHeight", GridItemType.Property), "alphabetical property grid contains row default");
+                Equal(true, HasGridItem(root, "DefaultColWidth", GridItemType.Property), "alphabetical property grid contains column default");
+                visibleProperties["DefaultRowHeight"].SetValue(control, 37);
+                visibleProperties["DefaultColWidth"].SetValue(control, 83);
+                Equal(37, control.get_RowHeight(0), "design-time row property setter works");
+                Equal(83, control.get_ColWidth(0), "design-time column property setter works");
+                Equal(true, visibleProperties["DefaultRowHeight"].ShouldSerializeValue(control), "designer serializes changed row default");
+                Equal(true, visibleProperties["DefaultColWidth"].ShouldSerializeValue(control), "designer serializes changed column default");
+                visibleProperties["DefaultRowHeight"].ResetValue(control);
+                visibleProperties["DefaultColWidth"].ResetValue(control);
+                Equal(26, control.DefaultRowHeight, "design-time row reset works");
+                Equal(60, control.DefaultColWidth, "design-time column reset works");
+                foreach (string name in new[] { "GridLineColor", "HeaderBackColor", "SelectionColor" })
+                    Equal(false, visibleProperties[name].ShouldSerializeValue(control), "designer recognizes colour default for " + name);
+                var allProperties = System.ComponentModel.TypeDescriptor.GetProperties(control);
+                foreach (string name in new[] { "TopRow", "LeftCol" })
+                    Equal(System.ComponentModel.DesignerSerializationVisibility.Hidden,
+                        ((System.ComponentModel.DesignerSerializationVisibilityAttribute)allProperties[name].Attributes[typeof(System.ComponentModel.DesignerSerializationVisibilityAttribute)]).Visibility,
+                        "runtime scroll position excluded from serialization: " + name);
+            }
         }
         private static Point Center(Rectangle rect) => new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
         private static GridItem PropertyRoot(PropertyGrid grid)

@@ -53,7 +53,7 @@ namespace GridDotNet.Demo
             toolbar.Controls.Add(scrollOptions);
             var instructions = new Label
             {
-                Dock = DockStyle.Top, Height = 38, Padding = new Padding(6),
+                Dock = DockStyle.Top, Height = 50, Padding = new Padding(6),
                 Text = "Hold the left mouse button and drag a rectangle, then fill or clear it. Drag at the edges to scroll.\nArrow keys move; Shift + arrows extend. Double-click or F2 edits text; Enter saves and Escape cancels."
             };
             grid.Dock = DockStyle.Fill;

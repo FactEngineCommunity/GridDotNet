@@ -1,9 +1,10 @@
 # GridDotNet
 
-A managed Windows Forms grid for .NET Framework 4.8.1, with image cells,
+A managed Windows Forms grid for .NET Framework 4.8.1 and .NET 10 on Windows, with image cells,
 rectangular drag selection, and a compatibility API for the AxMSGrid calls
 found in Rosters. Implemented in C#; usable from VB.NET. No third-party packages
-or ActiveX installation are required when the 4.8.1 targeting pack is installed.
+or ActiveX installation are required. One shared implementation builds a separate
+DLL for each target framework.
 
 ## Features
 
@@ -23,7 +24,13 @@ validation, and database logic.
 
 1. Open `GridDotNet.sln`.
 2. Set **GridDotNet.Demo** as the startup project.
-3. Press **F5**.
+3. Select the desired demo target framework (`net481` or `net10.0-windows`) and
+   press **F5**. The following commands also run each version explicitly:
+
+   ```powershell
+   dotnet run --project GridDotNet.Demo --framework net481
+   dotnet run --project GridDotNet.Demo --framework net10.0-windows
+   ```
 4. Hold the left mouse button and drag over cells, then click **Fill with image**
    or **Clear selection**. **Fill using old API** demonstrates `FillStyle` and `Picture`.
 
@@ -59,37 +66,71 @@ these interactive checks.
 - **GridDotNet.Demo**: a simple WinForms demo.
 - **GridDotNet.Tests**: a dependency-free STA executable that checks selection,
   range fills, image rendering, fixed headers, scrolling, editing, row operations,
-  default sizing, bounds, and properties in a WinForms design host/PropertyGrid.
+  default sizing, bounds, and properties in a PropertyGrid on both targets.
+  The Framework target additionally tests a `System.Design` design host; modern
+  Visual Studio designer integration still needs an interactive smoke test.
   Run this executable directly; it is not a Visual Studio Test Explorer project.
 
 ```powershell
 dotnet build GridDotNet.sln
 & .\GridDotNet.Tests\bin\Debug\net481\GridDotNet.Tests.exe
+& .\GridDotNet.Tests\bin\Debug\net10.0-windows\GridDotNet.Tests.exe
 ```
 
-Visual Studio needs the .NET Framework 4.8.1 developer/targeting pack and desktop
-development tools. The runtime is Windows-specific. The solution uses Any CPU
-and supports both 32-bit and 64-bit consumers without COM registration.
+To build the whole solution, install the .NET 10 SDK, .NET Framework 4.8.1
+developer/targeting pack, and Visual Studio's .NET desktop development tools.
+Both targets are Windows-specific. A project reference selects the matching
+target automatically. The Framework DLL is Any CPU; the .NET 10 DLL runs in the
+architecture selected by its consuming app. Neither uses COM registration.
 
 For a Release build:
 
 ```powershell
 dotnet build GridDotNet.sln --configuration Release
 & .\GridDotNet.Tests\bin\Release\net481\GridDotNet.Tests.exe
+& .\GridDotNet.Tests\bin\Release\net10.0-windows\GridDotNet.Tests.exe
 ```
 
-The reusable DLL is `GridDotNet/bin/Release/net481/GridDotNet.dll` (or the same
-path under `Debug` for a Debug build). Build outputs and local Visual Studio
+The build creates these reusable DLLs (replace `Release` with `Debug` for Debug builds):
+
+| Consuming project | DLL |
+| --- | --- |
+| .NET Framework 4.8.1, including current Rosters | `GridDotNet/bin/Release/net481/GridDotNet.dll` |
+| .NET 10 WinForms (`net10.0-windows`) | `GridDotNet/bin/Release/net10.0-windows/GridDotNet.dll` |
+
+Use the DLL matching the consuming project's framework. Framework applications
+need the .NET Framework 4.8.1 runtime; framework-dependent .NET 10 applications
+need the .NET 10 Windows Desktop Runtime. Build outputs and local Visual Studio
 settings are excluded from source control; build the solution to generate them.
 
 ## Add the control to an existing WinForms project
 
-1. Target .NET Framework 4.8.1 in the consuming project.
+1. Target .NET Framework 4.8.1 or `net10.0-windows` in the consuming WinForms project.
 2. Add a project reference to GridDotNet, or copy the built DLL into a stable
    dependency folder and add it through **References → Add Reference → Browse**.
-3. Open a form designer. Right-click the Toolbox, choose **Choose Items**, and
+3. For .NET Framework, open a form designer. Right-click the Toolbox, choose **Choose Items**, and
    browse to that DLL under **.NET Framework Components**. Select **GridControl**.
 4. Drag the control onto the form and set its name, bounds, rows, and columns.
+
+For a .NET 10 project, prefer adding the GridDotNet project to the solution and
+using a **Project Reference**. Build the solution and open the consuming form
+designer to use the control from the Toolbox. Modern WinForms uses an
+out-of-process designer; do not use the Framework Toolbox component/DLL for a
+.NET 10 form. A minimal consuming project targets `net10.0-windows` and sets
+`UseWindowsForms` to `true`:
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../GridDotNet/GridDotNet.csproj" />
+  </ItemGroup>
+</Project>
+```
 
 When updating a copied DLL, close the form designers, replace the copy that the
 project reference uses, then rebuild. Keep the Toolbox entry and project reference

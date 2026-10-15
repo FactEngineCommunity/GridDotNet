@@ -127,8 +127,11 @@ namespace GridDotNet
                 if (oldTop != TopRow || oldLeft != LeftCol) ScrollPositionChanged?.Invoke(this, EventArgs.Empty);
             }
         }
+        [DefaultValue(typeof(Color), "LightGray")]
         public Color GridLineColor { get; set; } = Color.LightGray;
+        [DefaultValue(typeof(Color), "235, 238, 242")]
         public Color HeaderBackColor { get; set; } = Color.FromArgb(235, 238, 242);
+        [DefaultValue(typeof(Color), "80, 40, 110, 220")]
         public Color SelectionColor { get; set; } = Color.FromArgb(80, 40, 110, 220);
 
         /// <summary>Text of the current cell; assigning with FillStyle=1 fills the selection.</summary>
@@ -141,12 +144,12 @@ namespace GridDotNet
         /// <summary>Image of the current cell. Assign null (Nothing in VB) to clear it.</summary>
         [Browsable(false), DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Image Picture { get => GetCell(row, col).Image; set => ApplyLegacy(cell => cell.Image = value); }
-        [Browsable(false)] public int TopRow
+        [Browsable(false), DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)] public int TopRow
         {
             get => FindIndex(rowEdges, rowEdges[fixedRows] + vertical.Value);
             set { CheckRow(value); SetScroll(vertical, rowEdges[Math.Max(fixedRows, value)] - rowEdges[fixedRows]); }
         }
-        [Browsable(false)] public int LeftCol
+        [Browsable(false), DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)] public int LeftCol
         {
             get => FindIndex(colEdges, colEdges[fixedCols] + horizontal.Value);
             set { CheckCol(value); SetScroll(horizontal, colEdges[Math.Max(fixedCols, value)] - colEdges[fixedCols]); }
