@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net481</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup><ProjectReference Include="../GridDotNet/GridDotNet.csproj" /></ItemGroup>
+</Project>

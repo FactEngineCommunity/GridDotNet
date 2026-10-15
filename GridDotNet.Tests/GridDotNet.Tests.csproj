@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net481</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System.Design" />
+    <ProjectReference Include="../GridDotNet/GridDotNet.csproj" />
+    <ProjectReference Include="../GridDotNet.Demo/GridDotNet.Demo.csproj" />
+  </ItemGroup>
+</Project>
